@@ -795,7 +795,11 @@ function deleteVideo(index){
 
 async function testLogin(){
 
-    console.log("Google login start");
+    const provider = new GoogleAuthProvider();
+
+	await signInWithPopup(firebaseAuth, provider);
+	
+	console.log("Login successful");
 
 }
 		
