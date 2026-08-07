@@ -294,6 +294,39 @@
         </div>
 
     </div>
+
+	<script type="module">
+
+	import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+	
+	import {
+		getAuth,
+		GoogleAuthProvider,
+		signInWithPopup
+	} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+	
+	const firebaseConfig = {
+	
+	  apiKey: "AIzaSyA3BQKYX2c-hDpmtrFyzbFWf3nn7pHziIc",
+	  authDomain: "teslavideos-d71e9.firebaseapp.com",
+	  projectId: "teslavideos-d71e9",
+	  storageBucket: "teslavideos-d71e9.firebasestorage.app",
+	  messagingSenderId: "96174368314",
+	  appId: "1:96174368314:web:2e7736bf50f47f6105f703",
+	  measurementId: "G-WHGVCY2H9G"
+	
+	};
+	
+	const app = initializeApp(firebaseConfig);
+	const auth = getAuth(app);
+	
+	window.firebaseAuth = auth;
+	window.GoogleAuthProvider = GoogleAuthProvider;
+	window.signInWithPopup = signInWithPopup;
+	
+	console.log("Firebase Auth Ready");
+	
+	</script>
 	
     <script src="https://www.youtube.com/iframe_api"></script>
 
