@@ -309,9 +309,10 @@
 
 	import {
 	    getFirestore,
-		doc,
-		setDoc,
-		getDoc
+	    doc,
+	    setDoc,
+	    getDoc,
+	    onSnapshot
 	} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 	
 	const firebaseConfig = {
@@ -337,6 +338,7 @@
 	window.firebaseDoc = doc;
 	window.firebaseSetDoc = setDoc;
 	window.firebaseGetDoc = getDoc;
+	window.firebaseOnSnapshot = onSnapshot;
 		
 	console.log("Firebase Auth Ready");
 	window.dispatchEvent(new Event("firebaseReady"));
@@ -834,25 +836,37 @@ async function testLogin(){
 
 }
 
-async function loadLibrary(){
+function loadLibrary(){
 
-const snap = await window.firebaseGetDoc( window.firebaseDoc( window.db, "library", "main" ) );
+    window.firebaseOnSnapshot(
+        window.firebaseDoc(
+            window.db,
+            "library",
+            "main"
+        ),
+        function(snap){
 
-if(snap.exists()){
+            if(snap.exists()){
 
-library = snap.data().library;
+                library = snap.data().library;
 
-currentCategory = Object.keys(library)[0];
+                if(
+                    !currentCategory ||
+                    !library[currentCategory]
+                ){
+                    currentCategory = Object.keys(library)[0];
+                    currentVideoIndex = 0;
+                }
 
-currentVideoIndex = 0;
+            }
 
-}
+            renderCategories();
+            renderVideos();
 
-renderCategories();
+        }
+    );
 
-renderVideos();
-
-}		
+}	
 		
 document.getElementById("addVideoBtn").style.display = "none";
 
