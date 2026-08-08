@@ -311,6 +311,7 @@
 	    getAuth,
 	    GoogleAuthProvider,
 	    signInWithPopup,
+		signOut,
 	    onAuthStateChanged
 	} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
@@ -341,6 +342,7 @@
 	window.firebaseAuth = auth;
 	window.GoogleAuthProvider = GoogleAuthProvider;
 	window.signInWithPopup = signInWithPopup;
+	window.firebaseSignOut = signOut;
 	window.firebaseOnAuthStateChanged = onAuthStateChanged;
 	window.db = db;
 	window.firebaseDoc = doc;
@@ -832,12 +834,14 @@ function updateAdminUI(){
 
         document.getElementById("addVideoBtn").style.display = "block";
         document.getElementById("addCategoryBtn").style.display = "block";
+        document.getElementById("loginBtn").textContent = "Logout";
 
     }
     else{
 
         document.getElementById("addVideoBtn").style.display = "none";
         document.getElementById("addCategoryBtn").style.display = "none";
+        document.getElementById("loginBtn").textContent = "Login";
 
     }
 
@@ -845,18 +849,33 @@ function updateAdminUI(){
 
 async function testLogin(){
 
-    const provider = new window.GoogleAuthProvider();
+    if(isAdmin){
 
-	await window.signInWithPopup(window.firebaseAuth, provider);
-	
-	console.log("Login successful");
+        await window.firebaseSignOut(
+            window.firebaseAuth
+        );
 
-	isAdmin = true;
+        isAdmin = false;
 
-	updateAdminUI();
-	
-	renderCategories();
-	renderVideos();
+        updateAdminUI();
+
+        renderCategories();
+        renderVideos();
+
+        console.log("Logout successful");
+
+        return;
+    }
+
+    const provider =
+        new window.GoogleAuthProvider();
+
+    await window.signInWithPopup(
+        window.firebaseAuth,
+        provider
+    );
+
+    console.log("Login successful");
 
 }
 
