@@ -366,12 +366,7 @@
 
 };
 
-let library =
-    JSON.parse(
-        localStorage.getItem(
-            'teslaVideos'
-        )
-    ) || defaultLibrary;
+let library = defaultLibrary;
 
 let currentCategory =
     Object.keys(library)[0];
@@ -832,13 +827,32 @@ async function testLogin(){
 	renderVideos();
 
 }
+
+async function loadLibrary(){
+
+const snap = await window.getDoc( window.doc( window.db, "library", "main" ) );
+
+if(snap.exists()){
+
+library = snap.data().library;
+
+currentCategory = Object.keys(library)[0];
+
+currentVideoIndex = 0;
+
+}
+
+renderCategories();
+
+renderVideos();
+
+}		
 		
 document.getElementById("addVideoBtn").style.display = "none";
 
 document.getElementById("addCategoryBtn").style.display = "none";
 
-renderCategories();
-renderVideos();
+loadLibrary();
 
 </script>
 
