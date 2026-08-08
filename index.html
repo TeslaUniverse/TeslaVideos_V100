@@ -333,6 +333,8 @@
 	window.GoogleAuthProvider = GoogleAuthProvider;
 	window.signInWithPopup = signInWithPopup;
 	window.db = db;
+	window.doc = doc;
+	window.setDoc = setDoc;
 		
 	console.log("Firebase Auth Ready");
 	
@@ -382,8 +384,8 @@ async function saveLibrary(){
 
     console.log("BEFORE SETDOC");
 	
-	await setDoc(
-	    doc(db, "library", "main"),
+	await window.setDoc(
+	    window.doc(db, "library", "main"),
 	    { library: library }
 	);
 
