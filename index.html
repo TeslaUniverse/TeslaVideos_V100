@@ -78,6 +78,10 @@
             overflow-y:auto;
         }
 
+		.videos-panel.hidden{
+		    display:none;
+		}
+
         .search{
             width:100%;
             padding:10px;
@@ -221,7 +225,9 @@
 
     <!-- VIDEOS -->
 
-    <div class="videos-panel">
+    <div
+	    class="videos-panel"
+	    id="videosPanel">
 
         <div class="panel-header">
 
@@ -261,6 +267,12 @@
 				class="toggle-btn"
 				onclick="toggleCategories()">	
 				☰ Categories	
+			</button>
+
+			<button
+			    class="toggle-btn"
+			    onclick="toggleVideos()">
+			    ☰ Videos
 			</button>
 
             <h2 id="currentTitle">
@@ -469,14 +481,22 @@ function renderCategories(){
 			    <span>📁 ${category}</span>
 			    ${
 			        isAdmin
-			        ? `
-			            <span
-			                style="cursor:pointer;"
-			                onclick="event.stopPropagation(); deleteCategory('${category}')">
-			                🗑️
-			            </span>
-			        `
-			        : ''
+					? `
+					    <span>
+					        <span
+					            style="cursor:pointer; margin-right:10px;"
+					            onclick="event.stopPropagation(); renameCategory('${category}')">
+					            ✏️
+					        </span>
+					
+					        <span
+					            style="cursor:pointer;"
+					            onclick="event.stopPropagation(); deleteCategory('${category}')">
+					            🗑️
+					        </span>
+					    </span>
+					`
+					: ''
 			    }
 			`;
 
@@ -544,14 +564,22 @@ function renderVideos(){
 			    <span>${video.title}</span>
 			    ${
 			        isAdmin
-			        ? `
-			            <span
-			                style="cursor:pointer;"
-			                onclick="event.stopPropagation(); deleteVideo(${index})">
-			                🗑️
-			            </span>
-			        `
-			        : ''
+					? `
+					    <span>
+					        <span
+					            style="cursor:pointer; margin-right:10px;"
+					            onclick="event.stopPropagation(); renameVideo(${index})">
+					            ✏️
+					        </span>
+					
+					        <span
+					            style="cursor:pointer;"
+					            onclick="event.stopPropagation(); deleteVideo(${index})">
+					            🗑️
+					        </span>
+					    </span>
+					`
+					: ''
 			    }
 			`;
 
@@ -742,6 +770,55 @@ function addVideo(){
     renderVideos();
 }
 
+function updateLayout(){
+
+    const categoriesPanel =
+        document.getElementById(
+            'categoriesPanel'
+        );
+
+    const videosPanel =
+        document.getElementById(
+            'videosPanel'
+        );
+
+    const categoriesHidden =
+        categoriesPanel.classList.contains(
+            'hidden'
+        );
+
+    const videosHidden =
+        videosPanel.classList.contains(
+            'hidden'
+        );
+
+    if(
+        categoriesHidden &&
+        videosHidden
+    ){
+        document.body.style.gridTemplateColumns =
+            '1fr';
+    }
+    else if(
+        categoriesHidden &&
+        !videosHidden
+    ){
+        document.body.style.gridTemplateColumns =
+            '320px 1fr';
+    }
+    else if(
+        !categoriesHidden &&
+        videosHidden
+    ){
+        document.body.style.gridTemplateColumns =
+            '250px 1fr';
+    }
+    else{
+        document.body.style.gridTemplateColumns =
+            '250px 320px 1fr';
+    }
+}
+
 function toggleCategories(){
 
     const panel =
@@ -753,20 +830,65 @@ function toggleCategories(){
         'hidden'
     );
 
-    if(
-        panel.classList.contains(
-            'hidden'
-        )
-    ){
-        document.body.style.gridTemplateColumns =
-            '320px 1fr';
-    }
-    else{
-        document.body.style.gridTemplateColumns =
-            '250px 320px 1fr';
-    }
+    updateLayout();
 }
 
+function toggleVideos(){
+
+    const panel =
+        document.getElementById(
+            'videosPanel'
+        );
+
+    panel.classList.toggle(
+        'hidden'
+    );
+
+    updateLayout();
+}
+
+function renameCategory(category){
+
+    if(!isAdmin){
+        return;
+    }
+
+    const newName =
+        prompt(
+            'New category name',
+            category
+        );
+
+    if(!newName){
+        return;
+    }
+
+    if(newName === category){
+        return;
+    }
+
+    if(library[newName]){
+        alert(
+            'Category already exists'
+        );
+        return;
+    }
+
+    library[newName] =
+        library[category];
+
+    delete library[category];
+
+    if(currentCategory === category){
+        currentCategory = newName;
+    }
+
+    saveLibrary();
+
+    renderCategories();
+    renderVideos();
+}
+		
 function deleteCategory(category){
 
     if(
@@ -803,6 +925,47 @@ function deleteCategory(category){
     renderVideos();
 }
 
+function renameVideo(index){
+
+    if(!isAdmin){
+        return;
+    }
+
+    const videos =
+        library[currentCategory];
+
+    const video =
+        videos[index];
+
+    const newTitle =
+        prompt(
+            'New video title',
+            video.title
+        );
+
+    if(!newTitle){
+        return;
+    }
+
+    if(newTitle === video.title){
+        return;
+    }
+
+    video.title =
+        newTitle;
+
+    saveLibrary();
+
+    renderVideos();
+
+    if(index === currentVideoIndex){
+        document.getElementById(
+            'currentTitle'
+        ).textContent =
+        newTitle;
+    }
+}
+		
 function deleteVideo(index){
 
     if(
