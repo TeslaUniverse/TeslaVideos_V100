@@ -171,6 +171,16 @@
 		    align-items:center;
 		}
 
+		#loginBtn{
+		    margin-left:auto;
+		    padding:8px 14px;
+		    border:none;
+		    border-radius:8px;
+		    background:#374151;
+		    color:white;
+		    cursor:pointer;
+		}
+
     </style>
 
 </head>
@@ -247,25 +257,21 @@
 
         <div class="player-header">
 
-		<button
-		    id="loginBtn"
-		    onclick="testLogin()">
-		
-		    Login
-		
-		</button>
-
-            <button
-                class="toggle-btn"
-                onclick="toggleCategories()">
-
-                ☰ Categories
-
-            </button>
+			<button
+				class="toggle-btn"
+				onclick="toggleCategories()">	
+				☰ Categories	
+			</button>
 
             <h2 id="currentTitle">
                 Select a Video
             </h2>
+
+			<button
+		    id="loginBtn"
+		    onclick="testLogin()">		
+		    Login		
+			</button>
 
         </div>
 
@@ -302,9 +308,10 @@
 	import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 	
 	import {
-		getAuth,
-		GoogleAuthProvider,
-		signInWithPopup
+	    getAuth,
+	    GoogleAuthProvider,
+	    signInWithPopup,
+	    onAuthStateChanged
 	} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
 	import {
@@ -334,6 +341,7 @@
 	window.firebaseAuth = auth;
 	window.GoogleAuthProvider = GoogleAuthProvider;
 	window.signInWithPopup = signInWithPopup;
+	window.firebaseOnAuthStateChanged = onAuthStateChanged;
 	window.db = db;
 	window.firebaseDoc = doc;
 	window.firebaseSetDoc = setDoc;
@@ -818,6 +826,23 @@ function deleteVideo(index){
     'Select a Video';
 }
 
+function updateAdminUI(){
+
+    if(isAdmin){
+
+        document.getElementById("addVideoBtn").style.display = "block";
+        document.getElementById("addCategoryBtn").style.display = "block";
+
+    }
+    else{
+
+        document.getElementById("addVideoBtn").style.display = "none";
+        document.getElementById("addCategoryBtn").style.display = "none";
+
+    }
+
+}
+
 async function testLogin(){
 
     const provider = new window.GoogleAuthProvider();
@@ -827,9 +852,8 @@ async function testLogin(){
 	console.log("Login successful");
 
 	isAdmin = true;
-	
-	document.getElementById("addVideoBtn").style.display = "block";
-	document.getElementById("addCategoryBtn").style.display = "block";
+
+	updateAdminUI();
 	
 	renderCategories();
 	renderVideos();
@@ -868,13 +892,27 @@ function loadLibrary(){
 
 }	
 		
-document.getElementById("addVideoBtn").style.display = "none";
-
-document.getElementById("addCategoryBtn").style.display = "none";
+updateAdminUI();
 
 window.addEventListener("firebaseReady", function(){
 
-loadLibrary();
+    window.firebaseOnAuthStateChanged(
+        window.firebaseAuth,
+        function(user){
+
+            isAdmin =
+                user &&
+                user.email === "dsf0011@gmail.com";
+
+            updateAdminUI();
+
+            renderCategories();
+            renderVideos();
+
+        }
+    );
+
+    loadLibrary();
 
 });
 
