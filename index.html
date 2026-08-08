@@ -309,6 +309,8 @@
 
 	import {
 	    getFirestore
+		doc
+		setDoc
 	} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 	
 	const firebaseConfig = {
@@ -378,9 +380,10 @@ let isAdmin = false;
 
 async function saveLibrary(){
 
-    console.log(
-        "saveLibrary() called"
-    );
+	await setDoc(
+	    doc(db, "library", "main"),
+	    { library: library }
+	);
 
 }
 
