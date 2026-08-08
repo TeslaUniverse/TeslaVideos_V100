@@ -191,8 +191,9 @@
             </div>
 
             <button
-                class="button"
-                onclick="addCategory()">
+			    id="addCategoryBtn"
+			    class="button"
+			    onclick="addCategory()">
 
                 + New Category
 
@@ -215,8 +216,9 @@
         <div class="panel-header">
 
             <button
-                class="button"
-                onclick="addVideo()">
+			    id="addVideoBtn"
+			    class="button"
+			    onclick="addVideo()">
 
                 + Add Video
 
@@ -366,6 +368,7 @@ let currentVideoIndex = 0;
 
 let player;
 let playerReady = false;
+let isAdmin = false;
 
 async function saveLibrary(){
 
@@ -457,7 +460,9 @@ function renderCategories(){
 
                 currentVideoIndex = 0;
 
-                renderCategories();
+                document.getElementById("addVideoBtn").style.display = "none";
+				document.getElementById("addCategoryBtn").style.display = "none";
+				renderCategories();
                 renderVideos();
 
                 if(
@@ -801,8 +806,20 @@ async function testLogin(){
 	
 	console.log("Login successful");
 
+	isAdmin = true;
+	
+	document.getElementById("addVideoBtn").style.display = "block";
+	document.getElementById("addCategoryBtn").style.display = "block";
+	
+	renderCategories();
+	renderVideos();
+
 }
 		
+document.getElementById("addVideoBtn").style.display = "none";
+
+document.getElementById("addCategoryBtn").style.display = "none";
+
 renderCategories();
 renderVideos();
 
