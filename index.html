@@ -380,14 +380,10 @@ let isAdmin = false;
 
 async function saveLibrary(){
 
-    console.log("BEFORE SETDOC");
-	
 	await window.firebaseSetDoc(
 	    window.firebaseDoc(window.db, "library", "main"),
 	    { library: library }
 	);
-
-	console.log("AFTER SETDOC");
 
 }
 
@@ -459,11 +455,17 @@ function renderCategories(){
 
             item.innerHTML = `
 			    <span>📁 ${category}</span>
-			    <span
-			        style="cursor:pointer;"
-			        onclick="event.stopPropagation(); deleteCategory('${category}')">
-			        🗑️
-			    </span>
+			    ${
+			        isAdmin
+			        ? `
+			            <span
+			                style="cursor:pointer;"
+			                onclick="event.stopPropagation(); deleteCategory('${category}')">
+			                🗑️
+			            </span>
+			        `
+			        : ''
+			    }
 			`;
 
             item.onclick = () => {
@@ -528,13 +530,18 @@ function renderVideos(){
 
             item.innerHTML = `
 			    <span>${video.title}</span>
-			
-			    <span
-			        style="cursor:pointer;"
-			        onclick="event.stopPropagation(); deleteVideo(${index})">
-			        🗑️
-			    </span>
-`			;
+			    ${
+			        isAdmin
+			        ? `
+			            <span
+			                style="cursor:pointer;"
+			                onclick="event.stopPropagation(); deleteVideo(${index})">
+			                🗑️
+			            </span>
+			        `
+			        : ''
+			    }
+			`;
 
             item.onclick = () => {
                 playVideo(index);
