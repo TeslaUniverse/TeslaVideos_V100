@@ -334,9 +334,9 @@
 	window.GoogleAuthProvider = GoogleAuthProvider;
 	window.signInWithPopup = signInWithPopup;
 	window.db = db;
-	window.doc = doc;
-	window.setDoc = setDoc;
-	window.getDoc = getDoc;
+	window.firebaseDoc = doc;
+	window.firebaseSetDoc = setDoc;
+	window.firebaseGetDoc = getDoc;
 		
 	console.log("Firebase Auth Ready");
 	
@@ -381,8 +381,8 @@ async function saveLibrary(){
 
     console.log("BEFORE SETDOC");
 	
-	await window.setDoc(
-	    window.doc(db, "library", "main"),
+	await window.firebaseSetDoc(
+	    window.firebaseDoc(window.db, "library", "main"),
 	    { library: library }
 	);
 
@@ -830,7 +830,7 @@ async function testLogin(){
 
 async function loadLibrary(){
 
-const snap = await window.getDoc( window.doc( window.db, "library", "main" ) );
+const snap = await window.firebaseGetDoc( window.firebaseDoc( window.db, "library", "main" ) );
 
 if(snap.exists()){
 
