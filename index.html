@@ -380,7 +380,10 @@ let isAdmin = false;
 
 async function saveLibrary(){
 
-    console.log("Firestore test");
+    await setDoc(
+	    doc(db, "library", "main"),
+	    { library: library }
+	);
 
 }
 
