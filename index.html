@@ -339,6 +339,7 @@
 	window.firebaseGetDoc = getDoc;
 		
 	console.log("Firebase Auth Ready");
+	window.dispatchEvent(new Event("firebaseReady"));
 	
 	</script>
 	
@@ -850,7 +851,11 @@ document.getElementById("addVideoBtn").style.display = "none";
 
 document.getElementById("addCategoryBtn").style.display = "none";
 
+window.addEventListener("firebaseReady", function(){
+
 loadLibrary();
+
+});
 
 </script>
 
