@@ -472,8 +472,6 @@ function renderCategories(){
 
                 currentVideoIndex = 0;
 
-                document.getElementById("addVideoBtn").style.display = "none";
-				document.getElementById("addCategoryBtn").style.display = "none";
 				renderCategories();
                 renderVideos();
 
@@ -814,7 +812,7 @@ async function testLogin(){
 
     const provider = new window.GoogleAuthProvider();
 
-	await window.signInWithPopup(firebaseAuth, provider);
+	await window.signInWithPopup(window.firebaseAuth, provider);
 	
 	console.log("Login successful");
 
