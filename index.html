@@ -1132,7 +1132,8 @@ async function searchYoutube() {
 					</button>
 
 					<button
-						class="control-btn">
+						class="control-btn"
+						onclick="saveYoutubeVideo('${video.videoId}', this)">
 						💾 Save
 					</button>
 				</div>
@@ -1175,6 +1176,212 @@ function playYoutubeVideo(videoId) {
     document.getElementById(
         'currentTitle'
     ).textContent = 'YouTube video';
+}
+
+const downloadButtons = new Map();
+let downloadStatusTimer = null;
+
+async function saveYoutubeVideo(videoId, button) {
+    const youtubeUrl =
+        'https://www.youtube.com/watch?v=' +
+        videoId;
+
+    const originalText =
+        button.textContent;
+
+    button.disabled = true;
+    button.textContent = 'Adding...';
+
+    try {
+        const response = await fetch(
+            'http://79.76.33.242:3000/api/download',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type':
+                        'application/json'
+                },
+                body: JSON.stringify({
+                    url: youtubeUrl
+                })
+            }
+        );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error ||
+                'Could not add video'
+            );
+        }
+
+        button.dataset.jobId =
+            data.jobId;
+
+        downloadButtons.set(
+            data.jobId,
+            button
+        );
+
+        button.textContent =
+            data.position === 1
+                ? 'Downloading...'
+                : 'Queued #' +
+                    data.position;
+
+        startDownloadStatusMonitor();
+
+    } catch (error) {
+        button.disabled = false;
+        button.textContent =
+            originalText;
+
+        alert(
+            'Save failed: ' +
+            error.message
+        );
+    }
+}
+
+function startDownloadStatusMonitor() {
+    if (downloadStatusTimer) {
+        return;
+    }
+
+    updateDownloadStatuses();
+
+    downloadStatusTimer =
+        setInterval(
+            updateDownloadStatuses,
+            2000
+        );
+}
+
+async function updateDownloadStatuses() {
+    try {
+        const response = await fetch(
+            'http://79.76.33.242:3000/api/status'
+        );
+
+        const status =
+            await response.json();
+
+        let videoFinished = false;
+
+        downloadButtons.forEach(
+            (button, jobId) => {
+
+                if (
+                    !document.body.contains(
+                        button
+                    )
+                ) {
+                    downloadButtons.delete(
+                        jobId
+                    );
+                    return;
+                }
+
+                if (
+                    status.id === jobId
+                ) {
+                    if (
+                        status.status ===
+                        'working'
+                    ) {
+                        button.textContent =
+                            status.message ===
+                            'Converting...'
+                                ? 'Converting...'
+                                : 'Downloading...';
+                    }
+
+                    if (
+                        status.status ===
+                        'done'
+                    ) {
+                        button.textContent =
+                            'Saved ✓';
+
+                        downloadButtons.delete(
+                            jobId
+                        );
+
+                        videoFinished = true;
+                    }
+
+                    if (
+                        status.status ===
+                        'error'
+                    ) {
+                        button.textContent =
+                            'Failed';
+
+                        button.disabled = false;
+
+                        downloadButtons.delete(
+                            jobId
+                        );
+                    }
+
+                    return;
+                }
+
+                const queuedJob =
+                    (status.queue || [])
+                        .find(
+                            job =>
+                                job.id ===
+                                jobId
+                        );
+
+                if (queuedJob) {
+                    button.textContent =
+                        'Queued #' +
+                        queuedJob.position;
+
+                    return;
+                }
+
+                button.textContent =
+                    'Saved ✓';
+
+                downloadButtons.delete(
+                    jobId
+                );
+
+                videoFinished = true;
+            }
+        );
+
+        if (videoFinished) {
+            await loadServerVideos();
+
+            currentCategory = 'Mixed';
+
+            renderCategories();
+            renderVideos();
+        }
+
+        if (
+            downloadButtons.size === 0 &&
+            downloadStatusTimer
+        ) {
+            clearInterval(
+                downloadStatusTimer
+            );
+
+            downloadStatusTimer = null;
+        }
+
+    } catch (error) {
+        console.error(
+            'Could not update download status',
+            error
+        );
+    }
 }
 
 updateAdminUI();
