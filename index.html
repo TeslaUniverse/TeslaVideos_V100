@@ -246,6 +246,20 @@
                 class="search"
                 placeholder="Search Video..."
                 oninput="renderVideos()">
+				
+			<input
+				type="text"
+				id="youtubeSearch"
+				class="search"
+				placeholder="Search YouTube...">
+
+			<button
+				class="button"
+				onclick="searchYoutube()">
+				Search YouTube
+			</button>
+
+			<div id="youtubeResults"></div>
 
         </div>
 
@@ -307,11 +321,9 @@
 
         </div>
 
-        <div class="player-container">
-
-            <div id="player"></div>
-
-        </div>
+		<div class="player-container">
+		    <canvas id="player" style="width:100%; height:80vh; background:#000;"></canvas>
+		</div>
 
     </div>
 
@@ -367,7 +379,7 @@
 	
 	</script>
 	
-    <script src="https://www.youtube.com/iframe_api"></script>
+	<script src="https://cdn.jsdelivr.net/gh/phoboslab/jsmpeg@master/jsmpeg.min.js"></script>
 
 	<script>
 
@@ -398,8 +410,6 @@ let currentCategory =
 
 let currentVideoIndex = 0;
 
-let player;
-let playerReady = false;
 let isAdmin = false;
 
 async function saveLibrary(){
@@ -409,50 +419,6 @@ async function saveLibrary(){
 	    { library: library }
 	);
 
-}
-
-function onYouTubeIframeAPIReady(){
-
-    player =
-        new YT.Player(
-            'player',
-            {
-                width:'100%',
-                height:'100%',
-
-                playerVars:{
-                    autoplay:1,
-                    rel:0
-                },
-
-                events:{
-                    onReady:onPlayerReady,
-                    onStateChange:onPlayerStateChange
-                }
-            }
-        );
-}
-
-function onPlayerReady(){
-
-    playerReady = true;
-
-    if(
-        library[currentCategory] &&
-        library[currentCategory].length
-    ){
-        playVideo(0);
-    }
-}
-
-function onPlayerStateChange(event){
-
-    if(
-        event.data ===
-        YT.PlayerState.ENDED
-    ){
-        nextVideo();
-    }
 }
 
 function renderCategories(){
@@ -510,12 +476,9 @@ function renderCategories(){
 				renderCategories();
                 renderVideos();
 
-                if(
-                    playerReady &&
-                    library[category].length
-                ){
-                    playVideo(0);
-                }
+                if(library[category].length){
+				    playVideo(0);
+				}
             };
 
             container.appendChild(
@@ -593,33 +556,44 @@ function renderVideos(){
         });
 }
 
+let jsmpegPlayer = null;
+
 function playVideo(index){
 
-    const videos =
-        library[currentCategory];
+    const videos = library[currentCategory];
 
     if(!videos.length){
         return;
     }
 
-    if(!playerReady){
-        return;
+    currentVideoIndex = index;
+    const video = videos[index];
+
+    document.getElementById('currentTitle').textContent = video.title;
+
+    // Stop previous player
+    if(jsmpegPlayer){
+        try { jsmpegPlayer.destroy(); } catch(e) {}
+        jsmpegPlayer = null;
     }
 
-    currentVideoIndex =
-        index;
+    const canvas = document.getElementById('player');
 
-    const video =
-        videos[index];
-
-    document.getElementById(
-        'currentTitle'
-    ).textContent =
-        video.title;
-
-    player.loadVideoById(
-        video.youtubeId
-    );
+    // Hvis videoen har en .ts-fil på serveren → afspil den
+    if(video.tsUrl){
+        jsmpegPlayer = new JSMpeg.Player(video.tsUrl, {
+            canvas: canvas,
+            autoplay: true,
+            audio: true,
+            loop: false,
+            progressive: true
+        });
+    }
+    // Ellers (gamle YouTube-links uden .ts endnu)
+    else {
+        document.getElementById('currentTitle').textContent =
+            video.title + " (ikke downloadet endnu)";
+    }
 
     renderVideos();
 }
@@ -691,21 +665,9 @@ function addCategory(){
     }
 }
 
-function addVideo(){
+async function addVideo(){
 
-    const title =
-        prompt(
-            'Video title'
-        );
-
-    if(!title){
-        return;
-    }
-
-    const youtubeUrl =
-        prompt(
-            'Paste YouTube link'
-        );
+    const youtubeUrl = prompt('Paste YouTube link');
 
     if(!youtubeUrl){
         return;
@@ -713,61 +675,84 @@ function addVideo(){
 
     let id = '';
 
-    if(
-        youtubeUrl.includes(
-            'watch?v='
-        )
-    ){
-
-        id =
-            youtubeUrl
-                .split('v=')[1]
-                .split('&')[0];
+    if(youtubeUrl.includes('watch?v=')){
+        id = youtubeUrl.split('v=')[1].split('&')[0];
     }
-
-    else if(
-        youtubeUrl.includes(
-            'youtu.be/'
-        )
-    ){
-
-        id =
-            youtubeUrl
-                .split('youtu.be/')[1]
-                .split('?')[0];
+    else if(youtubeUrl.includes('youtu.be/')){
+        id = youtubeUrl.split('youtu.be/')[1].split('?')[0];
     }
-
-    else if(
-        youtubeUrl.includes(
-            '/embed/'
-        )
-    ){
-
-        id =
-            youtubeUrl
-                .split('/embed/')[1];
+    else if(youtubeUrl.includes('/embed/')){
+        id = youtubeUrl.split('/embed/')[1];
     }
 
     if(!id){
-
-        alert(
-            'Only YouTube links are supported'
-        );
-
+        alert('Only YouTube links are supported');
         return;
     }
 
-    library[currentCategory]
-        .push({
+    const fullUrl = 'https://www.youtube.com/watch?v=' + id;
 
-            title:title,
-            youtubeId:id
+    document.getElementById('currentTitle').textContent = 'Downloading... please wait';
 
+    try {
+        const res = await fetch('http://79.76.33.242:3000/api/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: fullUrl })
         });
 
-    saveLibrary();
+        const data = await res.json();
 
-    renderVideos();
+        if(!res.ok){
+            alert(data.error || 'Download failed');
+            document.getElementById('currentTitle').textContent = 'Select a Video';
+            return;
+        }
+
+        // Vent til den er færdig
+        await waitForDownload();
+
+        // Genindlæs Mixed
+        await loadServerVideos();
+        currentCategory = 'Mixed';
+        renderCategories();
+        renderVideos();
+
+        document.getElementById('currentTitle').textContent = 'Download done!';
+
+    } catch(e) {
+        alert('Error: ' + e.message);
+        document.getElementById('currentTitle').textContent = 'Select a Video';
+    }
+}
+
+function waitForDownload(){
+    return new Promise((resolve) => {
+        const check = async () => {
+            try {
+                const res = await fetch('http://79.76.33.242:3000/api/status');
+                const status = await res.json();
+
+                if(status.status === 'done'){
+                    resolve();
+                    return;
+                }
+                if(status.status === 'error'){
+                    alert('Download error: ' + (status.message || ''));
+                    resolve();
+                    return;
+                }
+
+                document.getElementById('currentTitle').textContent =
+                    'Downloading... ' + (status.message || '');
+
+                setTimeout(check, 2000);
+            } catch(e) {
+                setTimeout(check, 2000);
+            }
+        };
+        check();
+    });
 }
 
 function updateLayout(){
@@ -1043,37 +1028,155 @@ async function testLogin(){
 }
 
 function loadLibrary(){
-
     window.firebaseOnSnapshot(
-        window.firebaseDoc(
-            window.db,
-            "library",
-            "main"
-        ),
+        window.firebaseDoc(window.db, "library", "main"),
         function(snap){
-
             if(snap.exists()){
-
                 library = snap.data().library;
-
-                if(
-                    !currentCategory ||
-                    !library[currentCategory]
-                ){
+                if(!currentCategory || !library[currentCategory]){
                     currentCategory = Object.keys(library)[0];
                     currentVideoIndex = 0;
                 }
-
             }
-
-            renderCategories();
-            renderVideos();
-
+            loadServerVideos();
         }
     );
+}
 
-}	
-		
+async function loadServerVideos(){
+    try {
+        const res = await fetch('http://79.76.33.242:3000/api/videos');
+        const files = await res.json();
+
+        if(!library['Mixed']) library['Mixed'] = [];
+
+        library['Mixed'] = library['Mixed'].filter(v => !v.fromServer);
+
+        files.forEach(f => {
+            library['Mixed'].push({
+                title: f.name.replace('.ts', ''),
+                tsUrl: 'http://79.76.33.242:3000' + f.url,
+                fromServer: true
+            });
+        });
+
+        renderCategories();
+        renderVideos();
+    } catch(e) {
+        console.error('Kunne ikke hente server-videoer', e);
+        renderCategories();
+        renderVideos();
+    }
+}
+
+async function searchYoutube() {
+
+    const query =
+        document.getElementById(
+            'youtubeSearch'
+        ).value.trim();
+
+    if (!query) {
+        return;
+    }
+
+    const res = await fetch(
+        'http://79.76.33.242:3000/api/search?q=' +
+        encodeURIComponent(query)
+    );
+
+    const results = await res.json();
+
+    const container =
+        document.getElementById(
+            'youtubeResults'
+        );
+
+    container.innerHTML = '';
+
+    results.forEach(video => {
+
+        const div =
+            document.createElement('div');
+
+        div.className = 'video-item';
+
+        div.innerHTML = `
+			<div style="
+				display:flex;
+				flex-direction:column;
+				gap:8px;
+				width:100%;
+			">
+
+			<img
+				src="${video.thumbnail}"
+				style="
+					width:100%;
+					border-radius:8px;
+			">
+ 
+
+				<div>
+					${video.title}
+				</div>
+
+				<div style="
+					display:flex;
+					gap:8px;
+				">
+					<button
+						class="control-btn"
+						onclick="playYoutubeVideo('${video.videoId}')">
+						▶ Play
+					</button>
+
+					<button
+						class="control-btn">
+						💾 Save
+					</button>
+				</div>
+
+			</div>
+		`;
+
+        container.appendChild(div);
+
+    });
+
+}
+
+function playYoutubeVideo(videoId) {
+    const playerContainer =
+        document.querySelector('.player-container');
+
+    playerContainer.innerHTML = '';
+
+    const iframe =
+        document.createElement('iframe');
+
+    iframe.src =
+        'https://www.youtube.com/embed/' +
+        videoId +
+        '?autoplay=1';
+
+    iframe.style.width = '100%';
+    iframe.style.height = '80vh';
+    iframe.style.border = '0';
+
+    iframe.allow =
+        'accelerometer; autoplay; clipboard-write; ' +
+        'encrypted-media; gyroscope; picture-in-picture; web-share';
+
+    iframe.allowFullscreen = true;
+
+    playerContainer.appendChild(iframe);
+
+    document.getElementById(
+        'currentTitle'
+    ).textContent = 'YouTube video';
+}
+
 updateAdminUI();
 
 window.addEventListener("firebaseReady", function(){
